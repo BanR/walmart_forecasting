@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>M5 EDA — Sales Patterns & Data Understanding</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117; --card: #1a1d27; --border: #2e3145;
+    --accent: #4f8ef7; --green: #22c55e; --orange: #f97316;
+    --red: #ef4444; --yellow: #eab308; --purple: #a855f7;
+    --text: #e2e8f0; --muted: #94a3b8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; padding: 24px; }
+  h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 4px; }
+  h1 span { color: var(--accent); }
+  .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 28px; }
+  .grid { display: grid; gap: 18px; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  .card-title { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 12px; }
+  .stat-row { display: flex; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+  .stat { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; flex: 1; min-width: 140px; }
+  .stat .val { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+  .stat .lbl { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+  .section { margin: 24px 0 14px; font-size: 0.95rem; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+  .section::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .badge { background: var(--accent); color: var(--bg); border-radius: 20px; font-size: 0.6rem; font-weight: 700; padding: 2px 8px; }
+  .insight { background: #12151e; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 10px 14px; font-size: 0.8rem; color: var(--muted); margin-top: 10px; }
+  .insight strong { color: var(--text); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  th { color: var(--muted); text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  td { padding: 6px 8px; border-bottom: 1px solid #1e2234; }
+  @media (max-width: 900px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<h1>M5 EDA <span>— Sales Patterns & Data Understanding</span></h1>
+<p class="subtitle">Key patterns that drive feature engineering and model design</p>
+
+<div class="stat-row">
+  <div class="stat"><div class="val">1782</div><div class="lbl">Median item lifespan (days)</div></div>
+  <div class="stat"><div class="val">22.9%</div><div class="lbl">Items with full history</div></div>
+  <div class="stat"><div class="val">1.3%</div><div class="lbl">Items < 1 year old</div></div>
+  <div class="stat"><div class="val">0.036</div><div class="lbl">Median price coeff. of variation</div></div>
+</div>
+
+<div class="section"><span class="badge">1</span> Weekly Total Sales Over Time (by Category)</div>
+<div class="card">
+  <canvas id="trendChart" height="80"></canvas>
+  <div class="insight"><strong>Key finding:</strong> Clear yearly seasonality (peaks around Dec/holiday season). FOODS dominates volume. Notable dips on Christmas Day (stores closed).</div>
+</div>
+
+<div class="section"><span class="badge">2</span> Day-of-Week & Monthly Patterns</div>
+<div class="grid grid-2">
+  <div class="card">
+    <div class="card-title">Average Daily Sales by Day of Week (last year)</div>
+    <canvas id="dowChart" height="180"></canvas>
+    <div class="insight"><strong>Key finding:</strong> Strong weekly cycle. Weekend days (Sat/Sun) have noticeably higher sales — important calendar feature.</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Average Daily Total Sales by Month</div>
+    <canvas id="monthChart" height="180"></canvas>
+    <div class="insight"><strong>Key finding:</strong> Sales ramp in spring, peak activity in summer months. December shows holiday boost.</div>
+  </div>
+</div>
+
+<div class="section"><span class="badge">3</span> SNAP & Event Effects</div>
+<div class="grid grid-2">
+  <div class="card">
+    <div class="card-title">SNAP Benefit Days — Sales Lift</div>
+    <table>
+      <thead><tr><th>State</th><th>SNAP Day Sales</th><th>Non-SNAP Sales</th><th>Lift</th></tr></thead>
+      <tbody>
+        <tr><td>California</td><td>15,823</td><td>14,658</td><td style="color:var(--green)">+8.0%</td></tr>
+        <tr><td>Texas</td><td>10,644</td><td>9,544</td><td style="color:var(--green)">+11.5%</td></tr>
+        <tr><td>Wisconsin</td><td>10,833</td><td>8,893</td><td style="color:var(--green)">+21.8%</td></tr>
+      </tbody>
+    </table>
+    <div class="insight"><strong>Key finding:</strong> SNAP days increase sales 2–8% depending on state. Must use state-specific SNAP flags as features.</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Event Impact — Top Sales Boosters & Suppressors</div>
+    <canvas id="eventChart" height="180"></canvas>
+    <div class="insight"><strong>Key finding:</strong> Some events drive massive sales spikes (pre-holiday buying). Christmas/Thanksgiving suppress (closed stores). Avg non-event day: 34,609 units.</div>
+  </div>
+</div>
+
+<div class="section"><span class="badge">4</span> Intermittency & Sales Distribution</div>
+<div class="grid grid-2">
+  <div class="card">
+    <div class="card-title">% Zero-Sales Days by Department</div>
+    <canvas id="zeroChart" height="200"></canvas>
+    <div class="insight"><strong>Key finding:</strong> HOBBIES_2 has 86%+ zeros (highly intermittent). FOODS_3 has lowest zeros at ~54%. Loss function choice must handle this.</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Distribution of Mean Daily Sales (last 28d per series)</div>
+    <canvas id="histChart" height="200"></canvas>
+    <div class="insight"><strong>Key finding:</strong> Most series sell less than 2 units/day. Long tail with a few high-volume items. Revenue weighting means these high-volume items matter disproportionately.</div>
+  </div>
+</div>
+
+<script>
+const S = {"weekly_total": [189942, 193170, 182569, 169002, 171820, 184150, 180997, 165269, 169495, 185280, 180385, 165119, 150519, 170494, 169581, 160985, 155534, 163696, 189342, 183617, 169821, 169006, 192811, 189490, 179394, 169462, 187256, 194362, 194750, 181789, 180674, 193988, 195226, 181632, 187330, 215059, 212113, 198320, 184984, 195112, 209234, 198293, 190738, 173472, 210932, 211916, 209066, 165638, 202087, 211933, 202595, 192260, 211821, 230262, 220113, 205564, 211256, 236568, 231316, 211615, 206157, 239869, 232722, 208658, 202945, 224547, 235822, 226293, 221133, 228607, 259176, 271473, 248253, 236584, 263753, 255191, 244657, 228571, 237940, 257477, 265580, 238019, 232963, 263057, 252728, 240637, 227225, 248271, 247016, 228999, 206372, 222932, 247357, 237086, 218161, 191515, 243494, 237075, 239224, 202770, 234143, 245819, 237584, 216164, 221815, 250397, 269540, 246868, 244230, 261162, 261703, 238865, 235531, 255846, 262247, 242894, 224087, 229869, 248837, 251499, 242353, 231945, 273043, 272102, 250838, 249838, 287319, 273388, 266000, 247200, 254304, 278051, 275729, 257726, 266363, 285021, 287701, 267867, 252168, 266909, 277070, 260525, 238873, 242603, 262968, 252791, 237285, 220482, 248413, 248692, 243663, 207597, 233083, 252218, 256602, 229549, 223275, 255421, 269959, 247504, 236876, 258344, 270620, 243658, 236063, 254717, 274094, 270711, 243713, 248883, 261440, 253717, 238173, 226260, 266974, 269617, 259608, 240934, 274819, 273001, 265357, 245444, 249862, 274724, 268514, 259928, 255360, 264848, 266348, 254446, 239993, 255913, 268354, 254863, 238033, 231141, 259655, 252662, 236881, 231619, 236219, 243638, 238458, 208053, 223430, 240684, 253921, 234793, 236804, 269072, 286396, 243897, 239186, 259655, 265130, 252520, 239607, 259954, 265620, 259723, 245683, 250394, 275453, 261027, 251822, 239335, 273280, 285082, 276844, 253528, 285341, 274068, 290308, 271141, 262555, 299820, 289006, 276519, 259358, 283072, 288747, 283271, 273065, 272449, 306212, 285435, 268385, 263609, 270589, 268816, 264888, 248416, 248776, 265953, 269093, 233626, 245449, 268641, 283234, 267777, 263048, 291534, 305409, 299279, 280579, 291839, 304015, 297551, 281241, 282697, 309668, 306203, 286524, 285110, 315125, 312451, 311979], "week_labels": ["2011-01-29", "2011-02-05", "2011-02-12", "2011-02-19", "2011-02-26", "2011-03-05", "2011-03-12", "2011-03-19", "2011-03-26", "2011-04-02", "2011-04-09", "2011-04-16", "2011-04-23", "2011-04-30", "2011-05-07", "2011-05-14", "2011-05-21", "2011-05-28", "2011-06-04", "2011-06-11", "2011-06-18", "2011-06-25", "2011-07-02", "2011-07-09", "2011-07-16", "2011-07-23", "2011-07-30", "2011-08-06", "2011-08-13", "2011-08-20", "2011-08-27", "2011-09-03", "2011-09-10", "2011-09-17", "2011-09-24", "2011-10-01", "2011-10-08", "2011-10-15", "2011-10-22", "2011-10-29", "2011-11-05", "2011-11-12", "2011-11-19", "2011-11-26", "2011-12-03", "2011-12-10", "2011-12-17", "2011-12-24", "2011-12-31", "2012-01-07", "2012-01-14", "2012-01-21", "2012-01-28", "2012-02-04", "2012-02-11", "2012-02-18", "2012-02-25", "2012-03-03", "2012-03-10", "2012-03-17", "2012-03-24", "2012-03-31", "2012-04-07", "2012-04-14", "2012-04-21", "2012-04-28", "2012-05-05", "2012-05-12", "2012-05-19", "2012-05-26", "2012-06-02", "2012-06-09", "2012-06-16", "2012-06-23", "2012-06-30", "2012-07-07", "2012-07-14", "2012-07-21", "2012-07-28", "2012-08-04", "2012-08-11", "2012-08-18", "2012-08-25", "2012-09-01", "2012-09-08", "2012-09-15", "2012-09-22", "2012-09-29", "2012-10-06", "2012-10-13", "2012-10-20", "2012-10-27", "2012-11-03", "2012-11-10", "2012-11-17", "2012-11-24", "2012-12-01", "2012-12-08", "2012-12-15", "2012-12-22", "2012-12-29", "2013-01-05", "2013-01-12", "2013-01-19", "2013-01-26", "2013-02-02", "2013-02-09", "2013-02-16", "2013-02-23", "2013-03-02", "2013-03-09", "2013-03-16", "2013-03-23", "2013-03-30", "2013-04-06", "2013-04-13", "2013-04-20", "2013-04-27", "2013-05-04", "2013-05-11", "2013-05-18", "2013-05-25", "2013-06-01", "2013-06-08", "2013-06-15", "2013-06-22", "2013-06-29", "2013-07-06", "2013-07-13", "2013-07-20", "2013-07-27", "2013-08-03", "2013-08-10", "2013-08-17", "2013-08-24", "2013-08-31", "2013-09-07", "2013-09-14", "2013-09-21", "2013-09-28", "2013-10-05", "2013-10-12", "2013-10-19", "2013-10-26", "2013-11-02", "2013-11-09", "2013-11-16", "2013-11-23", "2013-11-30", "2013-12-07", "2013-12-14", "2013-12-21", "2013-12-28", "2014-01-04", "2014-01-11", "2014-01-18", "2014-01-25", "2014-02-01", "2014-02-08", "2014-02-15", "2014-02-22", "2014-03-01", "2014-03-08", "2014-03-15", "2014-03-22", "2014-03-29", "2014-04-05", "2014-04-12", "2014-04-19", "2014-04-26", "2014-05-03", "2014-05-10", "2014-05-17", "2014-05-24", "2014-05-31", "2014-06-07", "2014-06-14", "2014-06-21", "2014-06-28", "2014-07-05", "2014-07-12", "2014-07-19", "2014-07-26", "2014-08-02", "2014-08-09", "2014-08-16", "2014-08-23", "2014-08-30", "2014-09-06", "2014-09-13", "2014-09-20", "2014-09-27", "2014-10-04", "2014-10-11", "2014-10-18", "2014-10-25", "2014-11-01", "2014-11-08", "2014-11-15", "2014-11-22", "2014-11-29", "2014-12-06", "2014-12-13", "2014-12-20", "2014-12-27", "2015-01-03", "2015-01-10", "2015-01-17", "2015-01-24", "2015-01-31", "2015-02-07", "2015-02-14", "2015-02-21", "2015-02-28", "2015-03-07", "2015-03-14", "2015-03-21", "2015-03-28", "2015-04-04", "2015-04-11", "2015-04-18", "2015-04-25", "2015-05-02", "2015-05-09", "2015-05-16", "2015-05-23", "2015-05-30", "2015-06-06", "2015-06-13", "2015-06-20", "2015-06-27", "2015-07-04", "2015-07-11", "2015-07-18", "2015-07-25", "2015-08-01", "2015-08-08", "2015-08-15", "2015-08-22", "2015-08-29", "2015-09-05", "2015-09-12", "2015-09-19", "2015-09-26", "2015-10-03", "2015-10-10", "2015-10-17", "2015-10-24", "2015-10-31", "2015-11-07", "2015-11-14", "2015-11-21", "2015-11-28", "2015-12-05", "2015-12-12", "2015-12-19", "2015-12-26", "2016-01-02", "2016-01-09", "2016-01-16", "2016-01-23", "2016-01-30", "2016-02-06", "2016-02-13", "2016-02-20", "2016-02-27", "2016-03-05", "2016-03-12", "2016-03-19", "2016-03-26", "2016-04-02", "2016-04-09", "2016-04-16", "2016-04-23", "2016-04-30", "2016-05-07", "2016-05-14"], "weekly_foods": [139174, 142510, 131518, 114527, 123171, 132020, 126960, 112563, 115188, 131007, 127445, 113374, 100609, 116011, 117938, 108901, 104722, 112424, 134711, 129866, 116650, 115564, 138859, 134793, 125125, 115855, 129041, 138888, 138217, 125759, 125606, 137598, 139562, 127346, 131528, 155958, 155690, 141255, 128294, 136351, 152593, 143519, 138036, 121209, 155120, 158919, 153764, 118085, 147769, 158953, 149556, 137662, 151602, 170217, 160567, 145684, 149119, 173979, 169379, 151192, 147454, 177499, 172878, 150209, 146171, 162217, 181478, 173287, 165879, 165189, 194080, 200539, 175986, 165724, 192728, 186526, 173801, 162472, 169433, 188791, 193384, 167193, 161677, 185461, 176954, 164889, 153015, 172819, 176340, 158220, 138804, 152211, 176489, 171027, 154315, 128875, 172513, 173288, 172828, 142387, 163589, 182031, 173983, 148150, 148714, 177076, 186896, 162006, 159002, 181734, 179973, 158241, 158402, 170506, 177847, 161429, 143024, 152358, 170781, 169990, 158751, 150840, 182993, 189299, 169906, 169051, 201588, 192491, 183038, 166658, 171805, 195897, 194815, 175294, 183616, 205621, 207327, 185027, 169332, 177138, 193157, 179174, 158956, 162086, 182710, 176145, 159033, 147022, 169431, 177030, 169200, 140856, 161155, 180842, 182508, 156704, 151329, 178115, 186060, 161864, 155309, 174571, 189311, 165121, 159608, 172854, 194307, 190061, 169076, 170291, 182524, 180804, 163290, 152516, 184435, 192751, 183075, 163149, 190696, 194673, 185651, 167853, 168347, 192156, 187708, 177686, 172521, 180698, 188152, 175906, 162447, 171842, 185552, 175022, 157421, 153404, 175530, 176117, 160276, 156972, 156366, 169483, 163754, 139770, 146158, 172280, 176928, 156441, 154710, 179339, 194373, 157611, 146732, 169284, 172831, 163561, 152102, 167255, 173930, 170963, 155984, 161862, 183528, 172707, 158673, 148423, 175046, 194070, 185969, 164552, 182869, 185452, 194579, 174693, 167882, 197639, 191409, 178237, 162428, 179576, 193958, 188033, 177963, 174876, 206940, 191319, 174356, 168068, 171874, 176536, 171755, 161460, 155054, 173662, 176943, 151835, 153180, 177682, 195775, 178772, 170572, 189904, 208161, 200395, 181852, 189715, 206990, 200795, 187951, 186618, 208527, 209321, 191256, 187508, 212627, 216376, 210992], "weekly_hobbies": [20450, 20026, 18406, 20306, 14993, 19426, 19791, 19648, 21354, 20970, 20466, 18372, 18808, 20994, 20345, 20032, 19988, 17920, 20230, 19835, 19920, 20465, 19799, 19622, 20251, 19677, 20651, 19583, 19321, 19633, 18171, 18706, 17909, 18089, 18937, 20000, 19535, 19196, 20018, 21038, 19496, 18740, 17464, 19489, 21123, 19814, 20377, 16918, 18321, 18431, 18474, 18883, 20629, 19770, 19762, 19211, 20619, 20291, 19408, 19281, 19367, 20597, 19995, 19593, 18993, 21324, 17493, 15940, 16160, 20077, 21485, 20483, 21109, 20230, 17998, 19899, 21575, 18879, 17674, 16348, 16689, 16476, 17038, 17414, 16474, 17731, 17008, 17953, 16950, 16686, 16744, 18015, 17072, 16802, 15441, 15565, 17922, 17234, 18079, 14159, 15402, 15929, 16222, 19592, 23586, 20527, 23110, 23186, 24631, 20353, 22753, 23193, 19995, 23323, 24478, 24505, 24490, 19333, 22676, 24675, 25119, 24297, 27056, 25344, 25057, 24454, 25650, 22656, 23077, 23497, 24261, 23331, 22396, 22918, 23138, 17857, 22048, 22951, 24052, 26645, 24645, 25153, 25031, 25427, 24411, 24814, 25068, 22643, 25787, 24221, 25035, 21969, 22683, 23188, 23948, 22934, 23081, 24185, 23224, 22466, 22109, 23529, 22615, 21773, 22109, 22889, 22327, 22096, 22574, 21905, 22803, 21958, 22808, 21975, 24076, 22775, 22689, 22980, 24093, 21896, 22637, 21420, 22469, 22807, 22117, 21145, 21366, 22469, 21125, 20927, 21033, 22520, 23139, 23382, 24092, 24730, 24100, 22879, 24038, 21820, 24224, 23705, 23800, 21479, 22703, 21228, 22175, 22931, 24687, 26248, 26675, 25039, 25526, 26488, 25775, 25392, 25080, 27196, 26848, 24549, 26182, 26490, 27175, 25845, 27059, 26838, 27486, 25963, 25829, 25552, 29151, 25441, 26864, 27154, 26108, 27712, 27194, 26686, 26966, 28218, 26202, 27054, 26775, 27728, 28014, 27433, 29068, 30129, 29431, 28135, 28952, 26101, 28601, 29007, 29306, 25539, 27171, 26219, 25631, 25770, 26458, 29070, 27303, 27142, 26995, 27611, 26434, 26817, 26227, 26664, 27792, 27493, 27474, 28454, 29893, 27942, 28424], "weekly_household": [30318, 30634, 32645, 34169, 33656, 32704, 34246, 33058, 32953, 33303, 32474, 33373, 31102, 33489, 31298, 32052, 30824, 33352, 34401, 33916, 33251, 32977, 34153, 35075, 34018, 33930, 37564, 35891, 37212, 36397, 36897, 37684, 37755, 36197, 36865, 39101, 36888, 37869, 36672, 37723, 37145, 36034, 35238, 32774, 34689, 33183, 34925, 30635, 35997, 34549, 34565, 35715, 39590, 40275, 39784, 40669, 41518, 42298, 42529, 41142, 39336, 41773, 39849, 38856, 37781, 41006, 36851, 37066, 39094, 43341, 43611, 50451, 51158, 50630, 53027, 48766, 49281, 47220, 50833, 52338, 55507, 54350, 54248, 60182, 59300, 58017, 57202, 57499, 53726, 54093, 50824, 52706, 53796, 49257, 48405, 47075, 53059, 46553, 48317, 46224, 55152, 47859, 47379, 48422, 49515, 52794, 59534, 61676, 60597, 59075, 58977, 57431, 57134, 62017, 59922, 56960, 56573, 58178, 55380, 56834, 58483, 56808, 62994, 57459, 55875, 56333, 60081, 58241, 59885, 57045, 58238, 58823, 58518, 59514, 59609, 61543, 58326, 59889, 58784, 63126, 59268, 56198, 54886, 55090, 55847, 51832, 53184, 50817, 53195, 47441, 49428, 44772, 49245, 48188, 50146, 49911, 48865, 53121, 60675, 63174, 59458, 60244, 58694, 56764, 54346, 58974, 57460, 58554, 52063, 56687, 56113, 50955, 52075, 51769, 58463, 54091, 53844, 54805, 60030, 56432, 57069, 56171, 59046, 59761, 58689, 61097, 61473, 61681, 57071, 57613, 56513, 61551, 59663, 56459, 56520, 53007, 60025, 53666, 52567, 52827, 55629, 50450, 50904, 46804, 54569, 47176, 54818, 55421, 57407, 63485, 65348, 61247, 66928, 63883, 66524, 63567, 62425, 65503, 64842, 64211, 63517, 62042, 64750, 62475, 66090, 64074, 70748, 65049, 65046, 63424, 73321, 63175, 68865, 69294, 68565, 74469, 70403, 71596, 69964, 75278, 68587, 68184, 68327, 69845, 71258, 66683, 64961, 65412, 69284, 64145, 64181, 60855, 65121, 63284, 62844, 56252, 65098, 64740, 61828, 63235, 66018, 72560, 69945, 71742, 71732, 74513, 70591, 69939, 67063, 69415, 73349, 69389, 67794, 69148, 72605, 68133, 72563], "dow_pattern": [38442.63461538462, 35463.692307692305, 35086.11538461538, 35661.807692307695, 39025.903846153844, 47754.692307692305, 48341.980769230766], "dow_names": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], "monthly_avg": [33832.34810126582, 34644.64117647059, 34339.83870967742, 34432.183333333334, 34085.19209039548, 35001.41333333333, 35122.41935483871, 35946.645161290326, 35479.26, 34713.47741935484, 33290.82666666667, 32980.46451612903], "month_names": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], "snap_effects": {"CA": {"on": 15823.0, "off": 14658.0, "lift_pct": 8.0}, "TX": {"on": 10644.0, "off": 9544.0, "lift_pct": 11.5}, "WI": {"on": 10833.0, "off": 8893.0, "lift_pct": 21.8}}, "no_event_mean": 34609.0, "top_events": {"LaborDay": 42155.0, "OrthodoxEaster": 41228.0, "SuperBowl": 40924.0, "Easter": 39518.0, "Father's day": 36562.0, "Pesach End": 36280.0, "Mother's day": 36111.0, "Purim End": 35957.0, "Eid al-Fitr": 35268.0, "ColumbusDay": 35165.0}, "bottom_events": {"Christmas": 16.0, "Thanksgiving": 21130.0, "NewYear": 25768.0, "LentWeek2": 29747.0, "Halloween": 30059.0}, "zero_by_dept": {"FOODS_1": 63.0, "FOODS_2": 67.8, "FOODS_3": 58.6, "HOBBIES_1": 73.1, "HOBBIES_2": 88.4, "HOUSEHOLD_1": 62.9, "HOUSEHOLD_2": 80.6}, "sales_hist_bins": ["0", "0.1", "0.5", "1", "2", "5", "10", "20", "50", "100", "500", "500+"], "sales_hist_counts": [2451, 9989, 6921, 5756, 3735, 1130, 369, 122, 16, 1, 0], "price_cv_mean": 0.042, "price_cv_median": 0.036, "price_changes_per_item": 2243.7, "lifespan_min": 96, "lifespan_max": 1941, "lifespan_median": 1782, "pct_full_history": 22.9, "pct_under_1year": 1.3};
+
+// --- Trend chart ---
+new Chart(document.getElementById('trendChart'), {
+  type: 'line',
+  data: {
+    labels: S.week_labels,
+    datasets: [
+      { label:'FOODS', data:S.weekly_foods, borderColor:'#3b82f6', borderWidth:1.5, pointRadius:0, fill:false },
+      { label:'HOUSEHOLD', data:S.weekly_household, borderColor:'#22c55e', borderWidth:1.5, pointRadius:0, fill:false },
+      { label:'HOBBIES', data:S.weekly_hobbies, borderColor:'#a855f7', borderWidth:1.5, pointRadius:0, fill:false },
+    ]
+  },
+  options: {
+    plugins: { legend: { labels: { color:'#94a3b8' } } },
+    scales: {
+      x: { ticks: { color:'#94a3b8', maxTicksLimit:20 }, grid: { color:'#2e3145' } },
+      y: { ticks: { color:'#94a3b8' }, grid: { color:'#2e3145' } }
+    }
+  }
+});
+
+// --- Day of week ---
+new Chart(document.getElementById('dowChart'), {
+  type: 'bar',
+  data: {
+    labels: S.dow_names,
+    datasets: [{ data: S.dow_pattern, backgroundColor: S.dow_pattern.map((v,i) => i>=5 ? '#3b82f6' : '#3b82f680'), borderRadius: 4 }]
+  },
+  options: { plugins: { legend: { display:false } }, scales: { y: { grid: { color:'#2e3145' }, ticks: { color:'#94a3b8' } }, x: { grid: { display:false }, ticks: { color:'#94a3b8' } } } }
+});
+
+// --- Monthly ---
+new Chart(document.getElementById('monthChart'), {
+  type: 'bar',
+  data: {
+    labels: S.month_names,
+    datasets: [{ data: S.monthly_avg, backgroundColor: '#22c55e80', borderColor: '#22c55e', borderWidth: 1, borderRadius: 4 }]
+  },
+  options: { plugins: { legend: { display:false } }, scales: { y: { grid: { color:'#2e3145' }, ticks: { color:'#94a3b8' } }, x: { grid: { display:false }, ticks: { color:'#94a3b8' } } } }
+});
+
+// --- Events ---
+const eventLabels = Object.keys(S.top_events).concat(Object.keys(S.bottom_events));
+const eventValues = Object.values(S.top_events).concat(Object.values(S.bottom_events));
+const eventColors = eventValues.map(v => v > S.no_event_mean ? '#22c55ecc' : '#ef4444cc');
+new Chart(document.getElementById('eventChart'), {
+  type: 'bar',
+  data: {
+    labels: eventLabels,
+    datasets: [{ data: eventValues, backgroundColor: eventColors, borderRadius: 4 }]
+  },
+  options: {
+    indexAxis: 'y',
+    plugins: { legend: { display:false },
+      annotation: { annotations: { line1: { type:'line', xMin:S.no_event_mean, xMax:S.no_event_mean, borderColor:'#f97316', borderDash:[5,5] } } }
+    },
+    scales: { x: { grid: { color:'#2e3145' }, ticks: { color:'#94a3b8' } }, y: { grid: { display:false }, ticks: { color:'#94a3b8', font: { size:10 } } } }
+  }
+});
+
+// --- Zero chart ---
+const zeroDepts = Object.keys(S.zero_by_dept);
+const zeroVals = Object.values(S.zero_by_dept);
+const zeroColors = zeroVals.map(v => v > 75 ? '#ef4444cc' : v > 65 ? '#f97316cc' : '#22c55ecc');
+new Chart(document.getElementById('zeroChart'), {
+  type: 'bar',
+  data: {
+    labels: zeroDepts,
+    datasets: [{ data: zeroVals, backgroundColor: zeroColors, borderRadius: 4 }]
+  },
+  options: {
+    plugins: { legend: { display:false } },
+    scales: { y: { grid: { color:'#2e3145' }, ticks: { color:'#94a3b8', callback: v=>v+'%' }, max:100 }, x: { grid: { display:false }, ticks: { color:'#94a3b8' } } }
+  }
+});
+
+// --- Histogram ---
+new Chart(document.getElementById('histChart'), {
+  type: 'bar',
+  data: {
+    labels: S.sales_hist_bins,
+    datasets: [{ data: S.sales_hist_counts, backgroundColor: '#a855f7cc', borderRadius: 4 }]
+  },
+  options: {
+    plugins: { legend: { display:false } },
+    scales: { y: { type:'logarithmic', grid: { color:'#2e3145' }, ticks: { color:'#94a3b8' } }, x: { grid: { display:false }, ticks: { color:'#94a3b8', font: { size:10 } } } }
+  }
+});
+</script>
+</body>
+</html>

@@ -12,6 +12,8 @@ lightning_logs/
 
 # Notes and documentation
 docs/
+!reports/
+reports/.DS_Store
 plan.txt
 doubts.txt
 

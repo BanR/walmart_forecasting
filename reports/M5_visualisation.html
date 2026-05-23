@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>M5 Forecasting – Data & Problem Visualisation</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d27;
+    --border: #2e3145;
+    --accent: #4f8ef7;
+    --green: #22c55e;
+    --orange: #f97316;
+    --red: #ef4444;
+    --yellow: #eab308;
+    --purple: #a855f7;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --foods: #3b82f6;
+    --hobbies: #a855f7;
+    --household: #22c55e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; padding: 24px; }
+  h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 4px; }
+  h1 span { color: var(--accent); }
+  .subtitle { color: var(--muted); font-size: 0.95rem; margin-bottom: 32px; }
+
+  .grid { display: grid; gap: 20px; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .card-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title .dot {
+    width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+  }
+
+  /* Stat pills */
+  .stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 20px; }
+  .stat { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+  .stat .val { font-size: 1.9rem; font-weight: 700; color: var(--accent); line-height: 1; }
+  .stat .lbl { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+
+  /* Hierarchy tree */
+  .hierarchy { display: flex; flex-direction: column; gap: 6px; }
+  .hlevel {
+    display: flex; align-items: center; gap: 10px; border-radius: 8px;
+    padding: 9px 12px; border: 1px solid var(--border); transition: background 0.2s;
+    cursor: default;
+  }
+  .hlevel:hover { background: #232638; }
+  .hlevel .lvnum {
+    font-size: 0.65rem; font-weight: 700; color: var(--bg);
+    border-radius: 4px; padding: 2px 6px; min-width: 24px; text-align: center;
+  }
+  .hlevel .lvname { flex: 1; font-size: 0.85rem; }
+  .hlevel .lvcount {
+    font-size: 0.8rem; font-weight: 600; color: var(--muted);
+    background: #252839; border-radius: 6px; padding: 2px 8px;
+  }
+  .hlevel .lvavail {
+    font-size: 0.7rem; border-radius: 4px; padding: 2px 7px; font-weight: 600;
+  }
+  .avail-train { background: #16301a; color: var(--green); }
+  .avail-predict { background: #1a2540; color: var(--accent); }
+  .avail-both { background: #1e2a40; color: #7dd3fc; }
+  .avail-scored { background: #2d1a3f; color: var(--purple); }
+
+  /* Timeline */
+  .timeline { position: relative; height: 80px; margin: 10px 0; }
+  .tl-track {
+    position: absolute; top: 38px; left: 0; right: 0; height: 6px;
+    background: var(--border); border-radius: 3px;
+  }
+  .tl-seg {
+    position: absolute; top: 38px; height: 6px; border-radius: 3px;
+  }
+  .tl-label {
+    position: absolute; font-size: 0.68rem; color: var(--muted); white-space: nowrap;
+  }
+  .tl-arrow {
+    position: absolute; top: 34px; font-size: 0.65rem; font-weight: 700;
+    white-space: nowrap; transform: translateX(-50%);
+  }
+
+  /* Bar (horizontal) */
+  .hbar { display: flex; flex-direction: column; gap: 8px; }
+  .hbar-row { display: flex; align-items: center; gap: 10px; }
+  .hbar-lbl { font-size: 0.8rem; width: 130px; flex-shrink: 0; }
+  .hbar-track { flex: 1; background: #1e2234; border-radius: 4px; height: 22px; position: relative; overflow: hidden; }
+  .hbar-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 8px; font-size: 0.72rem; font-weight: 600; color: #fff; }
+  .hbar-val { font-size: 0.78rem; color: var(--muted); width: 60px; text-align: right; }
+
+  /* Metric formula */
+  .formula-box {
+    background: #12151e; border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 20px; font-family: 'Courier New', monospace; font-size: 0.85rem;
+    color: #93c5fd; line-height: 1.9;
+  }
+  .formula-box .comment { color: var(--muted); font-family: inherit; }
+  .formula-box .highlight { color: var(--yellow); }
+  .formula-box .good { color: var(--green); }
+  .formula-box .bad { color: var(--red); }
+
+  /* Legend */
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--muted); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Metric scorecard */
+  .score-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .score-table th { color: var(--muted); font-weight: 600; text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  .score-table td { padding: 7px 8px; border-bottom: 1px solid #1e2234; }
+  .score-table tr:last-child td { border-bottom: none; }
+  .tag { border-radius: 4px; padding: 2px 7px; font-size: 0.7rem; font-weight: 600; }
+  .tag-green { background: #16301a; color: var(--green); }
+  .tag-orange { background: #2a1a0a; color: var(--orange); }
+  .tag-red { background: #2a1010; color: var(--red); }
+  .tag-blue { background: #1a2540; color: var(--accent); }
+
+  /* Zero analysis */
+  .zero-bar { display: flex; height: 28px; border-radius: 6px; overflow: hidden; margin-top: 8px; }
+  .zero-seg { display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 600; }
+
+  /* Scroll container for hierarchy on small screens */
+  .scroll-x { overflow-x: auto; }
+
+  @media (max-width: 900px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .stat-grid { grid-template-columns: repeat(2,1fr); }
+  }
+
+  /* Section headers */
+  .section-header {
+    font-size: 1rem; font-weight: 600; color: var(--text);
+    margin: 28px 0 14px; display: flex; align-items: center; gap: 10px;
+  }
+  .section-header::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+  .badge {
+    background: var(--accent); color: var(--bg); border-radius: 20px;
+    font-size: 0.65rem; font-weight: 700; padding: 2px 8px;
+  }
+</style>
+</head>
+<body>
+
+<h1>M5 Forecasting <span>– Accuracy</span></h1>
+<p class="subtitle">Walmart · 3 US States · Hierarchical Daily Sales · 28-Day Point Forecast</p>
+
+<!-- ── STAT PILLS ── -->
+<div class="stat-grid">
+  <div class="stat"><div class="val">30,490</div><div class="lbl">Bottom-level series (Item × Store)</div></div>
+  <div class="stat"><div class="val">42,840</div><div class="lbl">Total series across all 12 hierarchy levels</div></div>
+  <div class="stat"><div class="val">1,941</div><div class="lbl">Days of training history (~5.4 years)</div></div>
+  <div class="stat"><div class="val">28</div><div class="lbl">Day forecast horizon to predict</div></div>
+</div>
+
+<!-- ── SECTION 1: DATA SOURCES ── -->
+<div class="section-header"><span class="badge">01</span> Data Sources & What Each File Contains</div>
+<div class="grid grid-4">
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:#3b82f6"></span>sales_train_*.csv</div>
+    <div style="font-size:0.82rem; line-height:1.7; color:var(--muted)">
+      <div style="color:var(--text); font-weight:600; margin-bottom:6px">Historical daily unit sales</div>
+      <div>📦 30,490 rows (item × store)</div>
+      <div>📅 d_1 → d_1913 (validation)</div>
+      <div>📅 d_1 → d_1941 (evaluation)</div>
+      <div style="margin-top:8px; color:var(--text)">Key columns:</div>
+      <div><code style="color:#7dd3fc">item_id, dept_id, cat_id</code></div>
+      <div><code style="color:#7dd3fc">store_id, state_id, d_1…d_N</code></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:#22c55e"></span>calendar.csv</div>
+    <div style="font-size:0.82rem; line-height:1.7; color:var(--muted)">
+      <div style="color:var(--text); font-weight:600; margin-bottom:6px">Date metadata — join on <code>d</code></div>
+      <div>📅 1,969 rows (one per day)</div>
+      <div>📌 <code style="color:#7dd3fc">wm_yr_wk</code> links to prices</div>
+      <div style="margin-top:8px; color:var(--text)">Explanatory variables:</div>
+      <div>✦ SNAP benefit days (CA/TX/WI)</div>
+      <div>✦ Events: sporting / cultural</div>
+      <div>✦ national / religious holidays</div>
+      <div>✦ Day of week, month, year</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:#f97316"></span>sell_prices.csv</div>
+    <div style="font-size:0.82rem; line-height:1.7; color:var(--muted)">
+      <div style="color:var(--text); font-weight:600; margin-bottom:6px">Weekly prices per item × store</div>
+      <div>💰 $0.01 → $107.32 range</div>
+      <div>📌 Join on <code style="color:#7dd3fc">item_id, store_id, wm_yr_wk</code></div>
+      <div style="margin-top:8px; color:var(--text)">Used for:</div>
+      <div>✦ Revenue-based metric weights</div>
+      <div>✦ Price elasticity features</div>
+      <div>✦ Relative price vs avg</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:#a855f7"></span>sample_submission.csv</div>
+    <div style="font-size:0.82rem; line-height:1.7; color:var(--muted)">
+      <div style="color:var(--text); font-weight:600; margin-bottom:6px">Output format template</div>
+      <div>📋 60,980 rows</div>
+      <div>📋 Columns: id, F1 … F28</div>
+      <div style="margin-top:8px; color:var(--text)">Two splits:</div>
+      <div>✦ <code style="color:#22c55e">_validation</code> → d_1914–d_1941</div>
+      <div>&nbsp;&nbsp;(public leaderboard)</div>
+      <div>✦ <code style="color:#a855f7">_evaluation</code> → d_1942–d_1969</div>
+      <div>&nbsp;&nbsp;(private leaderboard)</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECTION 2: TIMELINE ── -->
+<div class="section-header"><span class="badge">02</span> Timeline — What We Have vs. What We Predict</div>
+<div class="card">
+  <div class="card-title"><span class="dot" style="background:var(--accent)"></span>Day Index Timeline (d_1 to d_1969)</div>
+  <div style="position:relative; height:110px; margin: 10px 20px 0;">
+    <!-- Track -->
+    <div style="position:absolute; top:44px; left:0; right:0; height:8px; background:var(--border); border-radius:4px;"></div>
+    <!-- Training block -->
+    <div style="position:absolute; top:44px; left:0; width:97.7%; height:8px; background:linear-gradient(90deg,#1d4ed8,#3b82f6); border-radius:4px 0 0 4px;"></div>
+    <!-- Validation prediction -->
+    <div style="position:absolute; top:44px; left:97.7%; width:1.43%; height:8px; background:#22c55e;"></div>
+    <!-- Evaluation prediction -->
+    <div style="position:absolute; top:44px; left:99.13%; width:0.87%; height:8px; background:#a855f7; border-radius:0 4px 4px 0;"></div>
+
+    <!-- Markers -->
+    <div style="position:absolute; top:28px; left:0; font-size:0.65rem; color:var(--muted);">d_1<br><span style="color:var(--muted); font-size:0.6rem">Jan 2011</span></div>
+    <div style="position:absolute; top:14px; left:97%; font-size:0.65rem; color:#60a5fa; transform:translateX(-50%); text-align:center;">d_1913<br><span style="font-size:0.6rem">Apr 2016</span></div>
+    <div style="position:absolute; top:0; left:98.4%; font-size:0.65rem; color:#22c55e; transform:translateX(-50%); text-align:center;">d_1941<br><span style="font-size:0.6rem">May 2016</span></div>
+    <div style="position:absolute; top:14px; right:0; font-size:0.65rem; color:#a855f7; text-align:right;">d_1969<br><span style="font-size:0.6rem">Jun 2016</span></div>
+
+    <!-- Tick lines -->
+    <div style="position:absolute; top:40px; left:97.7%; width:1px; height:16px; background:#22c55e; opacity:0.6;"></div>
+    <div style="position:absolute; top:40px; left:99.13%; width:1px; height:16px; background:#a855f7; opacity:0.6;"></div>
+
+    <!-- Legend -->
+    <div style="position:absolute; bottom:0; left:0; display:flex; gap:16px; font-size:0.72rem;">
+      <span style="color:#3b82f6">■ Training data (1,913 days)</span>
+      <span style="color:#22c55e">■ Predict: d_1914–d_1941 → Public LB (28 days)</span>
+      <span style="color:#a855f7">■ Predict: d_1942–d_1969 → Private LB (28 days)</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECTION 3: HIERARCHY ── -->
+<div class="section-header"><span class="badge">03</span> Hierarchy — 12 Aggregation Levels</div>
+<div class="grid grid-2">
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:var(--purple)"></span>All 12 Levels — Series Counts & Data Availability</div>
+    <div class="hierarchy" id="hier"></div>
+    <div style="margin-top:12px; display:flex; flex-wrap:wrap; gap:8px; font-size:0.7rem;">
+      <span class="avail-train" style="border-radius:4px; padding:2px 8px;">Available in training CSV</span>
+      <span class="avail-predict" style="border-radius:4px; padding:2px 8px;">Must predict (bottom-level)</span>
+      <span class="avail-scored" style="border-radius:4px; padding:2px 8px;">Scored (all levels via aggregation)</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:var(--accent)"></span>Series Count by Level (log scale)</div>
+    <canvas id="hierarchyChart" height="300"></canvas>
+  </div>
+</div>
+
+<!-- ── SECTION 4: DATA COMPOSITION ── -->
+<div class="section-header"><span class="badge">04</span> Data Composition — What's In The Dataset</div>
+<div class="grid grid-3">
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:var(--accent)"></span>Series by Category & Department</div>
+    <canvas id="deptChart" height="240"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:var(--green)"></span>Stores by State</div>
+    <canvas id="storeChart" height="240"></canvas>
+    <div style="margin-top:14px;">
+      <div class="card-title" style="margin-bottom:10px;"><span class="dot" style="background:var(--orange)"></span>Revenue Weight by Category (last 28d)</div>
+      <canvas id="revChart" height="120"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:var(--red)"></span>Intermittency — % Zero-Sales Days</div>
+    <div style="font-size:0.78rem; color:var(--muted); margin-bottom:16px;">
+      <strong style="color:var(--text)">68.2%</strong> of all (series × day) combinations are zero. 
+      This is a defining challenge — standard regression losses are poorly suited.
+    </div>
+    <div class="hbar">
+      <div class="hbar-row">
+        <div class="hbar-lbl">FOODS (14,370 series)</div>
+        <div class="hbar-track"><div class="hbar-fill" style="width:62%; background:linear-gradient(90deg,#1d4ed8,#3b82f6)">62.0%</div></div>
+      </div>
+      <div class="hbar-row">
+        <div class="hbar-lbl">HOBBIES (5,650 series)</div>
+        <div class="hbar-track"><div class="hbar-fill" style="width:77.3%; background:linear-gradient(90deg,#6b21a8,#a855f7)">77.3%</div></div>
+      </div>
+      <div class="hbar-row">
+        <div class="hbar-lbl">HOUSEHOLD (10,470)</div>
+        <div class="hbar-track"><div class="hbar-fill" style="width:71.8%; background:linear-gradient(90deg,#15803d,#22c55e)">71.8%</div></div>
+      </div>
+      <div class="hbar-row">
+        <div class="hbar-lbl">All series</div>
+        <div class="hbar-track"><div class="hbar-fill" style="width:68.2%; background:linear-gradient(90deg,#b45309,#f97316)">68.2%</div></div>
+      </div>
+    </div>
+    <div style="margin-top:20px; font-size:0.78rem; color:var(--muted); line-height:1.6;">
+      <strong style="color:var(--text)">Why it matters:</strong><br>
+      Many items only sell on specific days (e.g. seasonal, event-driven). 
+      Using <code>Tweedie</code> or <code>Poisson</code> loss instead of MSE/MAE 
+      is strongly advised for intermittent series.
+    </div>
+    <div style="margin-top:14px; font-size:0.78rem; color:var(--muted);">
+      <strong style="color:var(--text)">RMSSE handles this:</strong> the denominator 
+      is computed only from the period <em>after the first non-zero sale</em>, 
+      preventing division-by-zero for entirely-zero series.
+    </div>
+  </div>
+</div>
+
+<!-- ── SECTION 5: METRIC ── -->
+<div class="section-header"><span class="badge">05</span> Metric — WRMSSE (Weighted Root Mean Squared Scaled Error)</div>
+<div class="grid grid-2">
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:var(--yellow)"></span>Step 1 — RMSSE per series</div>
+    <div class="formula-box">
+<span class="comment"># For a single aggregated time series i:</span>
+
+RMSSE_i = sqrt(
+  <span class="highlight">Numerator</span>   / <span class="good">Denominator</span>
+)
+
+<span class="highlight">Numerator</span> =
+  mean( (Y_true[t] - Y_pred[t])² )
+  over 28 forecast days
+  <span class="comment">→ mean squared forecast error</span>
+
+<span class="good">Denominator</span> =
+  mean( (Y[t] - Y[t-1])² )
+  over active training period
+  (starts from first non-zero day)
+  <span class="comment">→ naive random-walk in-sample MSE</span>
+
+<span class="comment">──────────────────────────────────
+RMSSE = 1.0  →  same as naive baseline
+RMSSE < 1.0  →  better than naive  ✓
+RMSSE > 1.0  →  worse than naive   ✗</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:var(--orange)"></span>Step 2 — Weights within each level</div>
+    <div class="formula-box">
+<span class="comment"># Weight = revenue share in last 28 training days</span>
+
+w(i, level) =
+  Σ( price(i,t) × units(i,t) )  <span class="comment"># last 28d</span>
+  ────────────────────────────
+  Σⱼ( price(j,t) × units(j,t) ) <span class="comment"># all series in level</span>
+
+<span class="comment">Example: within Level 4 (Category),
+  FOODS     weight ≈ 56.9%  (highest revenue)
+  HOUSEHOLD weight ≈ 30.3%
+  HOBBIES   weight ≈ 12.8%  (lowest revenue)</span>
+
+<span class="comment">→ Errors on high-revenue items penalised more
+→ FOODS accuracy matters most at every level</span>
+    </div>
+    <div style="margin-top:12px;">
+      <div class="card-title" style="margin-bottom:10px;"><span class="dot" style="background:var(--purple)"></span>Step 3 — Final WRMSSE score</div>
+      <div class="formula-box">
+WRMSSE =
+  <span class="highlight">(1/12)</span> × Σₗ [  Σᵢ∈level_l ( w(i,l) × RMSSE(i,l) )  ]
+
+<span class="comment">= equal-weight average across 12 hierarchy levels
+= each level contributes exactly 1/12 to final score
+
+Winning scores: ~0.5 – 0.6
+Naive baseline: 1.0
+Random:         >> 1.0</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Metric level breakdown -->
+<div class="card" style="margin-top:20px;">
+  <div class="card-title"><span class="dot" style="background:var(--accent)"></span>WRMSSE — What Gets Scored at Each Level</div>
+  <table class="score-table">
+    <thead>
+      <tr>
+        <th>Level</th><th>Aggregation</th><th># Series</th>
+        <th>Data in CSV?</th><th>Scored?</th><th>Key implication</th>
+      </tr>
+    </thead>
+    <tbody id="scoreTableBody"></tbody>
+  </table>
+</div>
+
+<!-- ── SECTION 6: WHAT TO PREDICT ── -->
+<div class="section-header"><span class="badge">06</span> What to Predict — Submission Mechanics</div>
+<div class="grid grid-2">
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:var(--green)"></span>Submission Format</div>
+    <div style="font-size:0.82rem; line-height:1.8; color:var(--muted);">
+      <div style="font-family:'Courier New',monospace; background:#0d0f17; border-radius:8px; padding:14px; color:#93c5fd; font-size:0.8rem; margin-bottom:12px;">
+id, F1, F2, ..., F28<br>
+<span style="color:#22c55e">HOBBIES_1_001_CA_1_<strong>validation</strong></span>, 0, 1, ..., 2<br>
+<span style="color:#22c55e">HOBBIES_1_002_CA_1_<strong>validation</strong></span>, 2, 0, ..., 1<br>
+<span style="color:#a855f7">HOBBIES_1_001_CA_1_<strong>evaluation</strong></span>, 3, 2, ..., 7<br>
+<span style="color:#a855f7">HOBBIES_1_002_CA_1_<strong>evaluation</strong></span>, 1, 0, ..., 4
+      </div>
+      <div><strong style="color:var(--text)">Total rows:</strong> 60,980 (30,490 × 2)</div>
+      <div><strong style="color:var(--text)">Total values:</strong> 1,707,440</div>
+      <div style="margin-top:10px; line-height:1.7;">
+        <span style="color:#22c55e">■ validation rows</span> → forecast d_1914–d_1941 → <strong>Public LB</strong><br>
+        <span style="color:#a855f7">■ evaluation rows</span> → forecast d_1942–d_1969 → <strong>Private LB</strong><br>
+        <br>
+        Predictions are <strong>only required at the bottom level</strong> 
+        (Item × Store). The 11 higher aggregation levels are computed 
+        automatically by summing bottom-level predictions.
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:var(--orange)"></span>Modelling Challenges Summary</div>
+    <div style="font-size:0.82rem; line-height:1; ">
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div style="background:#1e2234; border-radius:8px; padding:12px 14px; border-left:3px solid var(--red);">
+          <div style="font-weight:600; color:var(--text); margin-bottom:4px;">Intermittent demand</div>
+          <div style="color:var(--muted); font-size:0.78rem;">68% zeros → use Tweedie/Poisson loss, not MSE</div>
+        </div>
+        <div style="background:#1e2234; border-radius:8px; padding:12px 14px; border-left:3px solid var(--orange);">
+          <div style="font-weight:600; color:var(--text); margin-bottom:4px;">Scale (30,490 series)</div>
+          <div style="color:var(--muted); font-size:0.78rem;">Per-series models infeasible → global LightGBM/NN</div>
+        </div>
+        <div style="background:#1e2234; border-radius:8px; padding:12px 14px; border-left:3px solid var(--yellow);">
+          <div style="font-weight:600; color:var(--text); margin-bottom:4px;">Revenue weighting</div>
+          <div style="color:var(--muted); font-size:0.78rem;">FOODS (56.9% revenue) errors weighted most heavily</div>
+        </div>
+        <div style="background:#1e2234; border-radius:8px; padding:12px 14px; border-left:3px solid var(--accent);">
+          <div style="font-weight:600; color:var(--text); margin-bottom:4px;">External drivers</div>
+          <div style="color:var(--muted); font-size:0.78rem;">SNAP days, events, price changes are key features</div>
+        </div>
+        <div style="background:#1e2234; border-radius:8px; padding:12px 14px; border-left:3px solid var(--purple);">
+          <div style="font-weight:600; color:var(--text); margin-bottom:4px;">Hierarchy consistency</div>
+          <div style="color:var(--muted); font-size:0.78rem;">All 12 levels scored — errors propagate both ways</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:32px; text-align:center; font-size:0.7rem; color:var(--border);">
+  M5 Forecasting Accuracy · Data: Walmart via Kaggle · Makridakis Open Forecasting Center
+</div>
+
+<script>
+// ── Hierarchy data ──
+const levels = [
+  { n:'1', name:'All (Total)',          count:1,      color:'#ef4444', avail:'train' },
+  { n:'2', name:'State',                count:3,      color:'#f97316', avail:'train' },
+  { n:'3', name:'Store',                count:10,     color:'#eab308', avail:'train' },
+  { n:'4', name:'Category',             count:3,      color:'#84cc16', avail:'train' },
+  { n:'5', name:'Department',           count:7,      color:'#22c55e', avail:'train' },
+  { n:'6', name:'State × Category',     count:9,      color:'#10b981', avail:'train' },
+  { n:'7', name:'State × Department',   count:21,     color:'#06b6d4', avail:'train' },
+  { n:'8', name:'Store × Category',     count:30,     color:'#3b82f6', avail:'train' },
+  { n:'9', name:'Store × Department',   count:70,     color:'#6366f1', avail:'train' },
+  { n:'10',name:'Item',                 count:3049,   color:'#8b5cf6', avail:'train' },
+  { n:'11',name:'Item × State',         count:9147,   color:'#a855f7', avail:'train' },
+  { n:'12',name:'Item × Store',         count:30490,  color:'#ec4899', avail:'predict' },
+];
+
+// Build hierarchy list
+const hier = document.getElementById('hier');
+levels.forEach(l => {
+  const div = document.createElement('div');
+  div.className = 'hlevel';
+  const isBottom = l.n === '12';
+  div.innerHTML = `
+    <span class="lvnum" style="background:${l.color}">${l.n}</span>
+    <span class="lvname">${l.name}</span>
+    <span class="lvcount">${l.count.toLocaleString()}</span>
+    <span class="lvavail ${isBottom ? 'avail-predict' : 'avail-train'}">${isBottom ? 'PREDICT' : 'TRAIN'}</span>
+    <span class="lvavail avail-scored">SCORED</span>
+  `;
+  hier.appendChild(div);
+});
+
+// ── Hierarchy chart ──
+new Chart(document.getElementById('hierarchyChart'), {
+  type: 'bar',
+  data: {
+    labels: levels.map(l => `L${l.n}`),
+    datasets: [{
+      data: levels.map(l => l.count),
+      backgroundColor: levels.map(l => l.color + 'cc'),
+      borderColor: levels.map(l => l.color),
+      borderWidth: 1,
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    plugins: { legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.raw.toLocaleString()} series` }}},
+    scales: {
+      y: { type:'logarithmic', grid:{ color:'#2e3145' }, ticks:{ color:'#94a3b8' },
+           title:{ display:true, text:'Series count (log)', color:'#94a3b8' }},
+      x: { grid:{ color:'#2e3145' }, ticks:{ color:'#94a3b8' }}
+    }
+  }
+});
+
+// ── Dept chart ──
+new Chart(document.getElementById('deptChart'), {
+  type: 'bar',
+  data: {
+    labels: ['FOODS_1','FOODS_2','FOODS_3','HOBBIES_1','HOBBIES_2','HOUSEHOLD_1','HOUSEHOLD_2'],
+    datasets: [{
+      label: 'Series count',
+      data: [2160, 3980, 8230, 4160, 1490, 5320, 5150],
+      backgroundColor: ['#1e3a8a','#1d4ed8','#3b82f6','#6b21a8','#a855f7','#14532d','#22c55e'],
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    plugins: { legend:{ display:false } },
+    scales: {
+      x: { grid:{ color:'#2e3145' }, ticks:{ color:'#94a3b8' } },
+      y: { grid:{ color:'#2e3145' }, ticks:{ color:'#94a3b8' } }
+    }
+  }
+});
+
+// ── Store chart ──
+new Chart(document.getElementById('storeChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['CA (4 stores)','TX (3 stores)','WI (3 stores)'],
+    datasets: [{
+      data: [4, 3, 3],
+      backgroundColor: ['#3b82f6','#f97316','#22c55e'],
+      borderColor: '#1a1d27', borderWidth: 2
+    }]
+  },
+  options: {
+    cutout: '60%',
+    plugins: { legend: { position:'bottom', labels:{ color:'#94a3b8', font:{ size:11 } }}}
+  }
+});
+
+// ── Revenue chart ──
+new Chart(document.getElementById('revChart'), {
+  type: 'bar',
+  data: {
+    labels: ['FOODS','HOUSEHOLD','HOBBIES'],
+    datasets:[{
+      data: [56.9, 30.3, 12.8],
+      backgroundColor: ['#3b82f6cc','#22c55ecc','#a855f7cc'],
+      borderColor: ['#3b82f6','#22c55e','#a855f7'],
+      borderWidth:1, borderRadius:4
+    }]
+  },
+  options: {
+    plugins: { legend:{display:false},
+      tooltip:{ callbacks:{ label: ctx => ` ${ctx.raw}% of revenue weight` }}},
+    scales: {
+      y:{ grid:{ color:'#2e3145' }, ticks:{ color:'#94a3b8', callback: v=>v+'%' }},
+      x:{ grid:{ display:false }, ticks:{ color:'#94a3b8' }}
+    }
+  }
+});
+
+// ── Score table ──
+const tableRows = [
+  [1,'All (Total)',            1,      true, true,  'Single series — catches gross directional errors'],
+  [2,'State',                  3,      true, true,  'CA/TX/WI geographic accuracy'],
+  [3,'Store',                  10,     true, true,  'Store-level inventory planning'],
+  [4,'Category',               3,      true, true,  'FOODS carries 56.9% of weight here'],
+  [5,'Department',             7,      true, true,  '7 departments across 3 categories'],
+  [6,'State × Category',       9,      true, true,  'Regional category mix'],
+  [7,'State × Department',     21,     true, true,  'Regional department detail'],
+  [8,'Store × Category',       30,     true, true,  'Per-store category performance'],
+  [9,'Store × Department',     70,     true, true,  'Per-store department performance'],
+  [10,'Item',                  3049,   true, true,  '3,049 items — product-level accuracy'],
+  [11,'Item × State',          9147,   true, true,  'Item performance by geography'],
+  [12,'Item × Store',          30490,  true, true,  'Bottom level — only level you submit directly'],
+];
+const tbody = document.getElementById('scoreTableBody');
+tableRows.forEach(([lv, name, cnt, inCsv, scored, imp]) => {
+  const tr = document.createElement('tr');
+  const isBottom = lv === 12;
+  tr.innerHTML = `
+    <td style="color:#94a3b8">L${lv}</td>
+    <td style="font-weight:${isBottom?'600':'400'}">${name}</td>
+    <td>${cnt.toLocaleString()}</td>
+    <td><span class="tag tag-green">✓ Yes — sum rows</span></td>
+    <td><span class="tag tag-${isBottom?'blue':'green'}">${isBottom?'Direct submit':'Via aggregation'}</span></td>
+    <td style="color:#94a3b8; font-size:0.75rem;">${imp}</td>
+  `;
+  if (isBottom) tr.style.background = '#1a2236';
+  tbody.appendChild(tr);
+});
+</script>
+</body>
+</html>
