@@ -1,0 +1,19 @@
+.github/instructions/wmt-copilot.instructions.md
+
+# Local environments
+.venv/
+__pycache__/
+*.py[cod]
+
+# Data and generated artifacts
+data/
+models/
+lightning_logs/
+
+# Notes and documentation
+docs/
+plan.txt
+doubts.txt
+
+# Current experimental version; keep out until it is ready.
+src/ensemble/
