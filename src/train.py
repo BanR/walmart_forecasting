@@ -23,6 +23,13 @@ DATA_DIR = Path("data")
 MODEL_DIR = Path("models")
 MODEL_DIR.mkdir(exist_ok=True)
 
+REFERENCE_WRMSSE = {
+    "v0_weekly_naive": 0.752421,
+    "v1_lgbm": 0.670236,
+    "v2_lgbm": 0.550486,
+    "v3_weekly_tft_hybrid": 0.549651,
+}
+
 def load_features():
     """Load prebuilt feature parquets."""
     print("Loading feature parquets...")
@@ -238,12 +245,14 @@ def main():
 
     # Summary
     print("\n" + "=" * 60)
-    print(f"  LightGBM (Tweedie) {version} WRMSSE: {overall:.4f}")
-    print(f"  V1 WRMSSE:                   0.6702")
-    print(f"  Naive repeat baseline:       0.8377")
-    print(f"  Weekly avg baseline:         0.7524")
-    print(f"  Improvement vs V1:           {(0.6702 - overall)/0.6702*100:.1f}%")
-    print(f"  Improvement vs weekly avg:   {(0.7524 - overall)/0.7524*100:.1f}%")
+    print(f"  LightGBM (Tweedie) {version} WRMSSE: {overall:.6f}")
+    print(f"  V0 weekly naive WRMSSE:       {REFERENCE_WRMSSE['v0_weekly_naive']:.6f}")
+    print(f"  V1 LightGBM WRMSSE:           {REFERENCE_WRMSSE['v1_lgbm']:.6f}")
+    print(f"  V2 LightGBM WRMSSE:           {REFERENCE_WRMSSE['v2_lgbm']:.6f}")
+    print(f"  V3 hybrid WRMSSE:             {REFERENCE_WRMSSE['v3_weekly_tft_hybrid']:.6f}")
+    print(f"  Improvement vs V1:            {(REFERENCE_WRMSSE['v1_lgbm'] - overall)/REFERENCE_WRMSSE['v1_lgbm']*100:.1f}%")
+    print(f"  Improvement vs weekly naive:  {(REFERENCE_WRMSSE['v0_weekly_naive'] - overall)/REFERENCE_WRMSSE['v0_weekly_naive']*100:.1f}%")
+    print("  Note: V3 is created after this step by weekly TFT reconciliation; this script trains the V2 base.")
     print("=" * 60)
 
     # Save predictions

@@ -1,5 +1,8 @@
 """
-V3: Temporal Fusion Transformer (TFT) training for M5 forecasting.
+Daily Temporal Fusion Transformer (TFT) diagnostic training for M5 forecasting.
+
+This is not the current V3 hybrid model. V3 is the LightGBM V2 daily forecast
+after weekly store-department TFT correction.
 
 Follows pytorch-forecasting stallion tutorial pattern adapted for M5.
 Trains on a 365-day window (memory-feasible) with 28-day forecast horizon.
@@ -17,7 +20,7 @@ Usage:
     python -m src.tft.train
 
 Outputs:
-    models/tft_v3/          — PyTorch Lightning checkpoint
+    models/tft_v3/          — legacy daily TFT diagnostic checkpoint
     data/tft_training_ds.pt — Serialised TimeSeriesDataSet (needed for inference)
 """
 
@@ -223,7 +226,7 @@ def train(tft, train_dl, val_dl):
         mode="min",
         save_top_k=1,
     )
-    logger = CSVLogger("lightning_logs", name="tft_v3")
+    logger = CSVLogger("lightning_logs", name="tft_daily_diagnostic")
 
     trainer = pl.Trainer(
         max_epochs=MAX_EPOCHS,
@@ -245,10 +248,10 @@ def train(tft, train_dl, val_dl):
     return trainer
 
 def main():
-    # Restrict to 3 stores for a manageable V3 demo
+    # Restrict to 3 stores for a manageable daily TFT diagnostic.
     # Full 10-store run: set sample_stores=None (needs ~16GB RAM)
     SAMPLE_STORES = ["CA_1", "CA_2", "CA_3"]
-    print(f"Running TFT V3 on stores: {SAMPLE_STORES}")
+    print(f"Running daily TFT diagnostic on stores: {SAMPLE_STORES}")
     print("  (Set SAMPLE_STORES=None in main() for full 30K-series run)\n")
 
     df = load_and_prepare(sample_stores=SAMPLE_STORES)

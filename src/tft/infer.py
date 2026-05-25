@@ -1,5 +1,8 @@
 """
-V3: TFT Inference — load best checkpoint, generate predictions, score WRMSSE.
+Daily TFT diagnostic inference: load checkpoint, generate predictions, score WRMSSE.
+
+This is not the V3 hybrid model. Current V3 is created by applying a weekly
+store-department TFT correction to the LightGBM V2 daily predictions.
 
 Requires:
     - models/tft_v3/tft_best.ckpt  (from src.tft.train)
@@ -10,7 +13,7 @@ Usage:
     python -m src.tft.infer
 
 Outputs:
-    data/predictions_tft_v3.parquet  — (30490 or subset) × 28 predictions
+    data/predictions_tft_v3.parquet  — legacy daily TFT diagnostic predictions
     WRMSSE score printed to stdout
 """
 
@@ -172,14 +175,15 @@ def evaluate_wrmsse(pred_df, sample_stores):
             print(f"    {key}: {val:.4f}")
 
     print("\n" + "=" * 60)
-    print(f"  TFT V3 WRMSSE:             {overall:.4f}")
-    print(f"  LightGBM V2 WRMSSE:        0.5505")
-    print(f"  LightGBM V1 WRMSSE:        0.6702")
-    print(f"  Naive weekly avg:          0.7524")
+    print(f"  Daily TFT diagnostic WRMSSE: {overall:.4f}")
+    print(f"  V2 LightGBM WRMSSE:          0.550486")
+    print(f"  V3 hybrid WRMSSE:            0.549651")
+    print(f"  V1 LightGBM WRMSSE:          0.670236")
+    print(f"  V0 weekly naive WRMSSE:      0.752421")
     if sample_stores:
         print(f"\n  NOTE: TFT trained on {sample_stores} only.")
         print(f"  Non-sampled stores filled with 0 → inflates WRMSSE artificially.")
-        print(f"  For fair comparison, run with sample_stores=None.")
+        print(f"  Treat this as a diagnostic, not a comparable production model.")
     print("=" * 60)
 
     return overall, per_level
